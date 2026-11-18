@@ -1,11 +1,13 @@
 # Industry-Neutral Pairs Trading on CSI 800
 
-A research implementation of a statistical-arbitrage strategy on the Chinese A-share
-market: **point-in-time universe**, **industry-neutral cointegrated pairs**,
-**two-stage out-of-sample validation**, and **volatility-regime position sizing**.
-
-Backtest window: **July 2012 – November 2026 (14.4 years)**, CSI 800 universe,
-5 bp per side, 2% funding on the long leg, 4% borrow on the short leg.
+This strategy trades cointegrated pairs inside the same Shenwan level-2 industry
+among the 800 largest A-shares. Every six months it rebuilds a point-in-time
+universe, keeps pairs that pass both a full-sample and a held-out cointegration
+test, and ranks them by how little the spread's mean has drifted — not by how
+small the p-value is. It enters the top eight when the 20-day z-score exceeds
+2σ and exits at zero, sizing each position by the prevailing market-volatility
+regime; unused capital sits in reverse repo. Fully unlevered, it compounded
+9.6% a year over 14.4 years with a Sharpe of 1.16 and an 11% maximum drawdown.
 
 ---
 
@@ -200,11 +202,11 @@ python src/05_backtest.py
 
 # 中文说明
 
-一个 A 股统计套利策略的研究实现：**point-in-time 股票池**、**行业内协整配对**、
-**两段式样本外验证**、**波动率 regime 调仓位**。
-
-回测区间 **2012 年 7 月 ~ 2026 年 11 月（14.4 年）**，中证 800 池，
-单边 5bp，多头融资 2%/年，空头融券 4%/年。
+本策略在同一申万二级行业内、面向市值最大的 800 只 A 股做协整配对。每半年重建一次
+point-in-time 股票池，只保留同时通过全样本与留出样本协整检验的配对，并按**价差均值
+漂移的幅度**排序——而不是按 p 值大小排序。当 20 日 z 值超过 2σ 时做多/做空前 8 对，
+回到 0 时平仓；单对仓位随当前市场波动率状态缩放，闲置资金买入逆回购。全程不加杠杆，
+14.4 年年化 9.6%，夏普 1.16，最大回撤 11%。
 
 ## 结果
 
