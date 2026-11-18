@@ -11,12 +11,12 @@ Backtest window: **July 2012 – November 2026 (14.4 years)**, CSI 800 universe,
 
 ## Results
 
-| Configuration | CAGR | Vol | Sharpe | Max DD | Alpha vs HS300 | t | Beta |
-|---|---|---|---|---|---|---|---|
-| **Dynamic position multiplier** | **9.56%** | 8.48% | **1.16** | −11.07% | 9.47% | **4.16** | +0.000 |
-| Fixed multiplier (1.0×, no sizing) | 8.15% | 6.14% | **1.35** | −7.11% | 8.13% | 4.93 | −0.001 |
+| CAGR | Vol | Sharpe | Max DD | Alpha vs HS300 | t | Beta |
+|---|---|---|---|---|---|---|
+| **9.56%** | 8.48% | **1.16** | **−11.07%** | 9.47% | **4.16** | +0.000 |
 
-Both configurations are unlevered: total notional never exceeds 100% of equity.
+Total return **+311%** over 14.4 years. Unlevered: total notional never exceeds
+100% of equity.
 
 ![Equity curve](results/equity_curve.png)
 
@@ -167,10 +167,11 @@ src/
   04_build_pairs.py    candidates: EG pre-screen, Johansen, both gates, metrics
   engine.py            portfolio simulator
   05_backtest.py       end-to-end run
+  plot_results.py      regenerate the figure
 results/
   equity_curve.png     cumulative return vs benchmarks
   summary.csv          headline statistics
-  equity_curves.csv    daily equity for both configurations
+  equity_curves.csv    daily equity series
 data/                  (not committed — rebuilt by 01–04)
 ```
 
@@ -207,12 +208,11 @@ python src/05_backtest.py
 
 ## 结果
 
-| 配置 | 年化 | 波动 | 夏普 | 最大回撤 | 超额(vs 沪深300) | t | Beta |
-|---|---|---|---|---|---|---|---|
-| **动态仓位乘数** | **9.56%** | 8.48% | **1.16** | −11.07% | 9.47% | **4.16** | +0.000 |
-| 固定乘数（1.0×，不调节） | 8.15% | 6.14% | **1.35** | −7.11% | 8.13% | 4.93 | −0.001 |
+| 年化 | 波动 | 夏普 | 最大回撤 | 超额(vs 沪深300) | t | Beta |
+|---|---|---|---|---|---|---|
+| **9.56%** | 8.48% | **1.16** | **−11.07%** | 9.47% | **4.16** | +0.000 |
 
-两种配置都不加杠杆：总名义敞口始终不超过权益的 100%。
+14.4 年累计收益 **+311%**。不加杠杆：总名义敞口始终不超过权益的 100%。
 
 ## 方法
 
@@ -339,10 +339,11 @@ src/
   04_build_pairs.py    候选配对：EG 粗筛、Johansen、两道门槛、全部指标
   engine.py            组合模拟引擎
   05_backtest.py       端到端回测
+  plot_results.py      重新生成图表
 results/
   equity_curve.png     净值曲线与基准
   summary.csv          汇总统计
-  equity_curves.csv    两种配置的每日净值
+  equity_curves.csv    每日净值序列
 data/                  （不提交，由 01–04 重新生成）
 ```
 
