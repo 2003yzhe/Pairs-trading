@@ -129,7 +129,7 @@ def run(pools, carry=False, z_mode="dyn", entry=2.0, tp=0.3, stop=3.5, maxhold="
             zmap[key] = _z(s_full, z_mode, c.get("mu"), c.get("sd")).reindex(idx).values
             smap[key] = s_full.reindex(idx).values
             cmap[key] = c
-        selkeys = set(zmap)
+        selkeys = list(zmap)   # keep stab ranking order AND cross-process determinism
         nslot = len(sel) if (cap_mode == "sel" and sel) else target_n
         cap_period = (equity / nslot * lev * size_map.get(T, 1.0)) if sel else 0.0
         pending = [k2 for k2 in book if k2 not in selkeys] if carry else []

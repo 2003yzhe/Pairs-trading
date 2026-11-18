@@ -20,10 +20,10 @@ import pandas as pd
 import engine as E
 from config import (ADF_FULL_MAX, ADF_TEST_MAX, BORROW_RATE, COST_PER_SIDE,
                     DATA, ENTRY_Z, EXIT_Z, FUNDING_RATE, GROSS_CAP, IDLE_YIELD,
-                    MAX_PER_INDUSTRY, MULT_MAX, MULT_MIN, MULT_MIN_HISTORY,
-                    MULT_QUANTILE, MULT_WINDOW, OUT, REGIME_SIZING_MAX,
-                    REGIME_SIZING_MIN, REGIME_TP_SLOPE, REGIME_WARMUP,
-                    REGIME_WINDOW, TARGET_PAIRS)
+                    MAX_HOLD, MAX_PER_INDUSTRY, MULT_MAX, MULT_MIN,
+                    MULT_MIN_HISTORY, MULT_QUANTILE, MULT_WINDOW, OUT,
+                    REGIME_SIZING_MAX, REGIME_SIZING_MIN, REGIME_TP_SLOPE,
+                    REGIME_WARMUP, REGIME_WINDOW, TARGET_PAIRS)
 
 idx = pd.read_parquet(os.path.join(DATA, "index_long.parquet")).sort_index()
 hs_log = np.log(idx["hs300"]).diff()
@@ -61,7 +61,7 @@ SIZE_MAP = {T: float(np.clip(REGIME_SIZING_MIN + REGIME_SIZING_MAX * p,
 TP_MAP = {T: REGIME_TP_SLOPE * p for T, p in PCT.items()}
 
 BASE = dict(carry=True, z_mode="dyn", entry=ENTRY_Z, tp=EXIT_Z, stop=None,
-            maxhold="none", target_n=TARGET_PAIRS, max_per_ind=MAX_PER_INDUSTRY,
+            maxhold=MAX_HOLD, target_n=TARGET_PAIRS, max_per_ind=MAX_PER_INDUSTRY,
             cost=COST_PER_SIDE, borrow=BORROW_RATE, fund_rate=FUNDING_RATE,
             gross_cap=GROSS_CAP, size_map=SIZE_MAP, tp_map=TP_MAP,
             idle_yield=IDLE_YIELD)

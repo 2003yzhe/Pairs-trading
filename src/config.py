@@ -36,7 +36,7 @@ Z_EWMA_ALPHA = 0.06           # ~11 trading-day half-life
 ENTRY_Z = 2.0
 EXIT_Z = 0.0
 STOP_Z = None                 # no hard stop
-MAX_HOLD = None               # no time stop
+MAX_HOLD = 20                 # time stop: exit after 20 trading days if not taken profit
 COOLDOWN_DAYS = 5
 
 # ---------------------------------------------------------------- regime

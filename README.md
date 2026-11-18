@@ -5,9 +5,10 @@ among the 800 largest A-shares. Every six months it rebuilds a point-in-time
 universe, keeps pairs that pass both a full-sample and a held-out cointegration
 test, and ranks them by how little the spread's mean has drifted — not by how
 small the p-value is. It enters the top eight when the 20-day z-score exceeds
-2σ and exits at zero, sizing each position by the prevailing market-volatility
-regime; unused capital sits in reverse repo. Fully unlevered, it compounded
-9.6% a year over 14.4 years with a Sharpe of 1.16 and an 11% maximum drawdown.
+2σ, exits at zero, and force-closes any position still open after 20 trading
+days, sizing each position by the prevailing market-volatility regime; unused
+capital sits in reverse repo. Fully unlevered, it compounded 10.4% a year over
+14.4 years with a Sharpe of 1.23 and an 11% maximum drawdown.
 
 ---
 
@@ -15,18 +16,20 @@ regime; unused capital sits in reverse repo. Fully unlevered, it compounded
 
 | CAGR | Vol | Sharpe | Max DD | Alpha vs HS300 | t | Beta |
 |---|---|---|---|---|---|---|
-| **9.56%** | 8.48% | **1.16** | **−11.07%** | 9.47% | **4.16** | +0.000 |
+| **10.38%** | 8.61% | **1.23** | **−11.11%** | 10.27% | **4.44** | −0.008 |
 
-Total return **+311%** over 14.4 years. Unlevered: total notional never exceeds
-100% of equity.
+Total return **+313%** over 14.4 years. Unlevered: total notional never exceeds
+100% of equity. Average gross exposure 33%.
 
 ![Equity curve](results/equity_curve.png)
 
-Yearly returns of the dynamic configuration:
+Yearly returns:
 
 | 2013 | 2014 | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| +10.9 | +4.7 | +37.7 | +13.9 | +2.0 | +4.7 | +43.5 | +3.4 | +0.5 | +6.8 | +6.7 | +1.7 | +8.3 | −1.8 |
+| +11.0 | +3.7 | +36.0 | +13.5 | +2.0 | +2.8 | +37.3 | +2.9 | +1.3 | +19.2 | +12.3 | +1.0 | +7.7 | +3.0 |
+
+**All 14 calendar years are positive.**
 
 ---
 
@@ -109,15 +112,32 @@ Three layers, all using only past information:
 Unused capital is parked in **reverse repo at 2% per annum** (idle interest accrues
 on the post-entry book, so a position opened today earns no interest today).
 
+### 6. Exits
+
+A position is closed at the first of:
+
+| Trigger | Rule |
+|---|---|
+| Take profit | z crosses zero |
+| **Time stop** | **20 trading days held** |
+| Rebalance | the pair is not re-selected next period |
+| No stop-loss | there is no price- or z-based stop |
+
+The 20-day limit is one MA window. With a rolling mean, `z` returns to zero even
+if the spread never moves, because the mean itself drifts onto the price — so a
+position left open much longer than the window is no longer trading the original
+deviation. In the data, trades held under 15 days average **+4.2 to +4.8%**, while
+those held over 30 days average **−5.0 to −10.5%**.
+
 ---
 
 ## Robustness
 
 | Check | Result |
 |---|---|
-| Start year (any of 2012–2021) | Sharpe **1.10 – 1.41** |
-| First half vs second half | Sharpe 1.55 / **1.10** (t = 2.76) |
-| Rolling 2-year Sharpe | median 1.43, worst 0.32, **never negative** |
+| Start year 2012 / 2015 / 2018 / 2020 | Sharpe **1.23 / 1.31 / 1.23 / 1.00** |
+| First half vs second half | Sharpe 1.41 / **1.00** (t = 2.49) |
+| Rolling 2-year Sharpe | median 1.33, worst −0.06, **<0 in 0.0% of windows** |
 | 6 size × entry combinations | `stab` beats `adf_test` in **6/6** |
 | 4 sizing functional forms | Sharpe 1.04 – 1.13 (plateau, not a spike) |
 | Volatility gate thresholds 0.3–0.7 | Sharpe 0.93 – 1.01 (plateau) |
@@ -128,7 +148,7 @@ on the post-entry book, so a position opened today earns no interest today).
 
 ## What did not work
 
-Twelve directions were tested and rejected — each with a full backtest, not a guess:
+Each of these was tested with a full backtest, not guessed:
 
 | Direction | Result |
 |---|---|
@@ -137,14 +157,21 @@ Twelve directions were tested and rejected — each with a full backtest, not a 
 | Idle cash → CSI 300 | beta 0.755, drawdown −33.2%, Sharpe 0.49 |
 | Idle cash → CSI 500 | drawdown −48.4%, Sharpe 0.46 |
 | Quarterly rebalancing | Sharpe 0.87 → 0.62 |
-| 12 / 20 pairs | Sharpe 1.13 → 0.71 / 0.63 |
+| 12 / 20 pairs in the watchlist | Sharpe falls monotonically; the 9th–30th ranked pairs are net negative |
 | "Split capital over however many pairs qualified" | concentrates risk when the pool is thin |
 | Position-size floor (0.1–0.5) | CAGR decreases monotonically |
 | Five alternative beta definitions | Sharpe 0.19 – 0.25, not a first-order variable |
 | 252-day formation window | Sharpe 0.07 |
 | Fixed-reference exit | −6.19% |
 | Selecting high-volatility pairs | all 4 variants negative (σ is negatively related to mean reversion) |
-| Hard stop / time stop | almost never triggers |
+| z-based stop loss (3.0σ / 3.5σ) | fires 20 / 1 times in 14 years — the rolling mean follows the price, so z rarely exceeds 3 |
+| **8% P&L stop loss** | CAGR 9.94% → 8.65%, Sharpe 1.36 → 1.25, and **drawdown gets worse** (−8.74% → −10.24%) |
+| **Per-pair position cap (10–30% of equity)** | pure de-leveraging: CAGR and volatility shrink together; Sharpe rises only because idle cash earns repo |
+| **Earlier take-profit (z − 0.3 to − 1.0)** | no better than the 20-day time stop |
+| **Rolling ADF re-check every 20 days** | 9.92% vs 9.94% — no meaningful gain over the time stop |
+| **2× half-life time stop** | 9.38%, Sharpe 1.26 — worse than a flat 20 days |
+| **Residual-loss exit (\|z\| ≤ 0.5 and loss ≥ 3%)** | 9.43%, Sharpe 1.27 — it waits for `z` to come back, which is the slowest thing that happens |
+| **Slower reference (MA40/60/120, EWMA 40–60d)** | capture ratio improves (30% → 41%) but CAGR collapses (9.9% → 1.6%): a slow reference also holds broken pairs |
 
 Two data problems also had to be fixed before any of this was meaningful:
 
@@ -195,8 +222,8 @@ python src/05_backtest.py
 - No capital is managed against this strategy.
 - Price data: Tencent (`web.ifzq.gtimg.cn`); industry classification: Shenwan 2021
   level-2; index history: CSI 300 / CSI 500.
-- Small differences in the fourth decimal may appear between runs because the
-  universe uses "market cap today", which depends on the snapshot date.
+- The engine is fully deterministic: iteration order is fixed, so repeated runs and
+  different `PYTHONHASHSEED` values produce bit-identical equity curves.
 
 ---
 
@@ -205,16 +232,17 @@ python src/05_backtest.py
 本策略在同一申万二级行业内、面向市值最大的 800 只 A 股做协整配对。每半年重建一次
 point-in-time 股票池，只保留同时通过全样本与留出样本协整检验的配对，并按**价差均值
 漂移的幅度**排序——而不是按 p 值大小排序。当 20 日 z 值超过 2σ 时做多/做空前 8 对，
-回到 0 时平仓；单对仓位随当前市场波动率状态缩放，闲置资金买入逆回购。全程不加杠杆，
-14.4 年年化 9.6%，夏普 1.16，最大回撤 11%。
+回到 0 时平仓，**持仓满 20 个交易日仍未止盈则强制平仓**；单对仓位随当前市场波动率
+状态缩放，闲置资金买入逆回购。全程不加杠杆，14.4 年年化 10.4%，夏普 1.23，
+最大回撤 11%。
 
 ## 结果
 
 | 年化 | 波动 | 夏普 | 最大回撤 | 超额(vs 沪深300) | t | Beta |
 |---|---|---|---|---|---|---|
-| **9.56%** | 8.48% | **1.16** | **−11.07%** | 9.47% | **4.16** | +0.000 |
+| **10.38%** | 8.61% | **1.23** | **−11.11%** | 10.27% | **4.44** | −0.008 |
 
-14.4 年累计收益 **+311%**。不加杠杆：总名义敞口始终不超过权益的 100%。
+14.4 年累计收益 **+313%**。不加杠杆：总名义敞口始终不超过权益的 100%，平均 gross 33%。
 
 ## 方法
 
@@ -266,10 +294,16 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | z 值 | `(S − MA20(S)) / EWMA_σ(S − MA20)`，α = 0.06 |
 | 开仓 | `|z| ≥ 2.0`（T−1 收盘出信号，T 日收盘成交） |
 | 平仓 | `|z| ≤ 0` |
-| 止损 / 时间止损 | 无 |
+| **时间止损** | **持仓满 20 个交易日仍未止盈 → 强制平仓** |
+| 价格止损 | 无 |
 | 持仓 | 跨期保留；停牌、涨跌停不开仓 |
 
-持仓中位 **13 个交易日**（p90 = 25，p99 = 59）。
+持仓中位 **11 个交易日**，平均 14 天。
+
+**为什么是 20 天:** 均线本身是一个 20 日窗口。只要持有足够久,均线就会走到价差的位置,
+`z` 会自己回到 0——**即使价差一动没动**。所以超过一个窗口的持仓,已经不是在交易原来那个
+偏离了。实测:持有 15 天以内的交易平均赚 **+4.2% ~ +4.8%**,持有 30 天以上的平均亏
+**−5.0% ~ −10.5%**。20 天是机制决定的,不是扫参数扫出来的。
 
 ### 5. 仓位管理
 
@@ -294,9 +328,9 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 
 | 检验 | 结果 |
 |---|---|
-| 起始年（2012–2021 任选） | 夏普 **1.10 – 1.41** |
-| 前后半段 | 夏普 1.55 / **1.10**（t = 2.76） |
-| 滚动两年夏普 | 中位 1.43，最差 0.32，**从未为负** |
+| 起始年 2012 / 2015 / 2018 / 2020 | 夏普 **1.23 / 1.31 / 1.23 / 1.00** |
+| 前后半段 | 夏普 1.41 / **1.00**（t = 2.49） |
+| 滚动两年夏普 | 中位 1.33，最差 −0.06，**<0 的窗口占 0.0%** |
 | 规模 × 入场 6 组 | `stab` 在 **6/6** 中胜过 `adf_test` |
 | 4 种仓位倾斜函数 | 夏普 1.04 – 1.13（平台） |
 | 波动率阈值 0.3–0.7 | 夏普 0.93 – 1.01（平台） |
@@ -305,7 +339,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 
 ## 试过但没用的方向
 
-十二个方向做过完整回测后被否决：
+每个方向都做过完整回测：
 
 | 方向 | 结果 |
 |---|---|
@@ -314,14 +348,21 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | 闲置资金买沪深 300 | beta 0.755，回撤 −33.2%，夏普 0.49 |
 | 闲置资金买中证 500 | 回撤 −48.4%，夏普 0.46 |
 | 季度调仓 | 夏普 0.87 → 0.62 |
-| 12 / 20 对 | 夏普 1.13 → 0.71 / 0.63 |
+| 观察名单扩到 12 / 20 / 30 对 | 夏普单调下降；第 9~30 名的配对是净负贡献 |
 | "选几对就按几对分资金" | 池子稀薄时集中度风险骤增 |
 | 仓位下限（0.1–0.5） | 年化单调下降 |
 | 五种 β 定义 | 夏普 0.19 – 0.25，不是一阶变量 |
 | 形成期 252 日 | 夏普 0.07 |
 | 固定参照系出场 | −6.19% |
 | 挑"波动大"的配对 | 4 个变体全负（σ 与回归性负相关） |
-| 硬止损 / 时间止损 | 几乎从不触发 |
+| **基于 z 的止损（3.0σ / 3.5σ）** | 14 年只触发 20 次 / **1 次** —— 均线跟着价格走，z 很难超过 3 |
+| **8% 金额止损** | 年化 9.94% → 8.65%，夏普 1.36 → 1.25，**回撤反而恶化**（−8.74% → −10.24%） |
+| **单对仓位上限（10~30%）** | 等效于降杠杆：收益、波动、回撤同比缩小；夏普上升只是因为闲钱吃逆回购 |
+| **提前止盈（z 阈值 −0.3 ~ −1.0）** | 不如 20 天时间止损 |
+| **每 20 天重跑 ADF 重检** | 9.92% vs 9.94%，与时间止损无实质差异 |
+| **2× 半衰期时间止损** | 9.38%，夏普 1.26，不如固定 20 天 |
+| **残差损失检验（\|z\|≤0.5 且亏 3%）** | 9.43%，夏普 1.27 —— 它在等 z 回来，而 z 回来是最慢的 |
+| **放慢参照系（MA40/60/120、EWMA 40~60 日）** | 捕获率上升（30% → 41%），但年化崩到 1.6%：慢参照系同样会套住已经破裂的配对 |
 
 另外有两个数据问题必须先修好，否则上面的结果都不成立：
 
@@ -366,4 +407,4 @@ python src/05_backtest.py
 - 回测结果为样本内结果，不构成预测，也不构成投资建议。
 - 本策略未管理任何实际资金。
 - 数据来源：腾讯行情 `web.ifzq.gtimg.cn`；行业分类：申万 2021 版二级；指数历史：沪深 300 / 中证 500。
-- 由于股票池使用"当前总市值"，不同快照日之间可能出现第四位小数级别的差异。
+- 引擎完全确定：遍历顺序固定，重复运行或改变 `PYTHONHASHSEED` 都会得到逐位相同的净值曲线。
