@@ -1,0 +1,19 @@
+# data (rebuilt by 01-04)
+data/
+*.pkl
+*.parquet
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
