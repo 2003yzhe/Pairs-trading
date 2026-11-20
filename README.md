@@ -93,11 +93,13 @@ set of pairs — the two selections overlap by only **12%** — and the differen
 |---|---|
 | z-score | `(S − MA20(S)) / EWMA_σ(S − MA20)`, α = 0.06 |
 | Entry | `|z| ≥ 2.0` (signal on T−1 close, execution on T close) |
-| Exit | `|z| ≤ 0` |
-| Stop loss / time stop | none |
+| Take profit | `|z| ≤ 0` |
+| **Time stop** | **20 trading days — see §6** |
+| Stop loss | none |
 | Positions | carried across rebalances; no entry on suspended or limit-locked names |
 
-Median holding period is **13 trading days** (p90 = 25, p99 = 59).
+Median holding is **15 trading days** (p90 = 20). Of 433 trades, 258 exit on take
+profit and 126 on the 20-day limit.
 
 ### 5. Position sizing
 
@@ -114,7 +116,8 @@ Three layers, all using only past information:
 
 (c) hard cap      Σ notional ≤ 100% of equity
                   new entries shrink to the remaining room, or are skipped
-                  existing positions are never resized or force-closed
+                  this cap never resizes or closes an existing position;
+                  the only forced close is the 20-day time stop in §6
 ```
 
 Unused capital is parked in **reverse repo at 2% per annum** (idle interest accrues
@@ -136,6 +139,10 @@ if the spread never moves, because the mean itself drifts onto the price — so 
 position left open much longer than the window is no longer trading the original
 deviation. In the data, trades held under 15 days average **+4.2 to +4.8%**, while
 those held over 30 days average **−5.0 to −10.5%**.
+
+A close is deferred if the exit leg is limit-locked or suspended, so the limit is
+"first day on which the position can be closed at or after day 20". In 433 trades
+this pushed only a handful past 25 days.
 
 ---
 
@@ -272,7 +279,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | 价格止损 | 无 |
 | 持仓 | 跨期保留；停牌、涨跌停不开仓 |
 
-持仓中位 **11 个交易日**，平均 14 天。
+持仓中位 **15 个交易日**,p90 = 20。433 笔交易里,258 笔止盈出场,126 笔由 20 天期限平仓。
 
 **为什么是 20 天:** 均线本身是一个 20 日窗口。只要持有足够久,均线就会走到价差的位置,
 `z` 会自己回到 0——**即使价差一动没动**。所以超过一个窗口的持仓,已经不是在交易原来那个
@@ -293,7 +300,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 
 (c) 硬上限    Σ 仓位名义敞口 ≤ 权益 100%
               新开仓缩量到剩余空间，空间为零则跳过
-              已有仓位永不调整、不强平
+              这条上限不调整、不平掉已有仓位；唯一的强制平仓是 §6 的 20 天期限
 ```
 
 闲置资金买入**逆回购，按 2%/年计息**（利息按开仓后的持仓计提，当天新开的仓位不计息）。
