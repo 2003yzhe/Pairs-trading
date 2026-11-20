@@ -9,7 +9,7 @@ held-out cointegration test, and ranks them by how little the spread's mean has
 drifted — not by how small the p-value is. It trades the top eight when the 20-day
 z-score exceeds 2σ, exits at zero, and closes anything still open after 20 trading
 days. Position size scales with market volatility, idle cash earns reverse repo, and
-total notional never exceeds equity. Fully unlevered, it returned 10.4% a year over
+notional at entry never exceeds equity. Fully unlevered, it returned 10.4% a year over
 14.4 years with a Sharpe of 1.23, an 11% maximum drawdown, and essentially no beta
 to the CSI 300. Every calendar year was positive.
 
@@ -21,8 +21,9 @@ to the CSI 300. Every calendar year was positive.
 |---|---|---|---|---|---|---|
 | **10.38%** | 8.61% | **1.23** | **−11.11%** | 10.27% | **4.44** | −0.008 |
 
-Total return **+313%** over 14.4 years. Unlevered: total notional never exceeds
-100% of equity. Average gross exposure 33%.
+Total return **+313%** over 14.4 years. Unlevered: notional at entry never exceeds
+100% of equity (the ratio can drift above 100% intraday as equity moves). Average
+gross exposure 33%.
 
 ![Equity curve](results/equity_curve.png)
 
@@ -63,7 +64,7 @@ Inside each Shenwan level-2 industry (buckets with ≥6 names), enumerate all pa
 
 | Step | Rule |
 |---|---|
-| Size match | `|ln(mcap_A/mcap_B)| < 1.0` |
+| Size match | `\|ln(mcap_A/mcap_B)\| < 1.0` |
 | Engle-Granger pre-screen | OLS beta, residual ADF `p ≤ 0.20` |
 | Johansen | `det_order=0, k_ar_diff=1`, 5% level |
 
@@ -73,16 +74,16 @@ Inside each Shenwan level-2 industry (buckets with ≥6 names), enumerate all pa
 |---|---|
 | Full-window ADF | `p ≤ 0.05` |
 | Two-stage out-of-sample | beta on the first 378 days, ADF on the last 126 days, `p ≤ 0.10` |
-| **Ranking key** | **`stab = |mean(first half) − mean(second half)| / σ` ascending** |
+| **Ranking key** | **`stab = \|mean(first half) − mean(second half)\| / σ` ascending** |
 
 `stab` measures whether the **level** of the spread drifted, not how "stationary" it
 looks. Ranking by `stab` instead of by the ADF p-value picks a completely different
-set of pairs — the two selections overlap by only **12%** — and the difference is large:
+set of pairs — the two selections overlap by only **12.5%** (median) — and the difference is large:
 
-| Ranking key | Median `adf_test` of selected pairs | Median `stab` of selected pairs | Sharpe |
-|---|---|---|---|
-| `adf_test` | 0.0015 | **0.349** | 0.56 |
-| **`stab`** | 0.034 | **0.038** | **0.99** |
+| Ranking key | Median `adf_test` of selected pairs | Median `stab` of selected pairs | CAGR | Sharpe |
+|---|---|---|---|---|
+| `adf_test` | 0.0020 | **0.344** | 3.67% | **0.43** |
+| **`stab`** | 0.030 | **0.043** | **10.38%** | **1.23** |
 
 > A low ADF p-value only says "the spread reverts to *some* level".
 > What actually pays is that the level does not move.
@@ -92,8 +93,8 @@ set of pairs — the two selections overlap by only **12%** — and the differen
 | Item | Value |
 |---|---|
 | z-score | `(S − MA20(S)) / EWMA_σ(S − MA20)`, α = 0.06 |
-| Entry | `|z| ≥ 2.0` (signal on T−1 close, execution on T close) |
-| Take profit | `|z| ≤ 0` |
+| Entry | `\|z\| ≥ 2.0` (signal on T−1 close, execution on T close) |
+| Take profit | `\|z\| ≤ 0` |
 | **Time stop** | **20 trading days — see §6** |
 | Stop loss | none |
 | Positions | carried across rebalances; no entry on suspended or limit-locked names |
@@ -137,8 +138,8 @@ A position is closed at the first of:
 The 20-day limit is one MA window. With a rolling mean, `z` returns to zero even
 if the spread never moves, because the mean itself drifts onto the price — so a
 position left open much longer than the window is no longer trading the original
-deviation. In the data, trades held under 15 days average **+4.2 to +4.8%**, while
-those held over 30 days average **−5.0 to −10.5%**.
+deviation. Measured on a run **without** the time stop, trades held under 15 days
+averaged **+4.2 to +4.8%**, while those held over 30 days averaged **−5.0 to −10.5%**.
 
 A close is deferred if the exit leg is limit-locked or suspended, so the limit is
 "first day on which the position can be closed at or after day 20". In 433 trades
@@ -153,11 +154,10 @@ this pushed only a handful past 25 days.
 | Start year 2012 / 2015 / 2018 / 2020 | Sharpe **1.23 / 1.31 / 1.23 / 1.00** |
 | First half vs second half | Sharpe 1.41 / **1.00** (t = 2.49) |
 | Rolling 2-year Sharpe | median 1.33, worst −0.06, **<0 in 0.0% of windows** |
-| 6 size × entry combinations | `stab` beats `adf_test` in **6/6** |
-| 4 sizing functional forms | Sharpe 1.04 – 1.13 (plateau, not a spike) |
-| Volatility gate thresholds 0.3–0.7 | Sharpe 0.93 – 1.01 (plateau) |
-| Borrow rate 0% → 15% | CAGR 8.76% → 6.35%, still significant |
-| Transaction cost 4 bp → 20 bp | CAGR 8.37% → 7.78% |
+| **Ranking key: `stab` vs `adf_test`** | **CAGR 10.38% vs 3.67%; Sharpe 1.23 vs 0.43** |
+| Four sizing forms (2p, 0.5+p, √2p, 1) | Sharpe **1.14 – 1.30**, a plateau; the chosen form is not the maximum |
+| Borrow rate 0% → 4% → 8% → 15% | CAGR **11.11% → 10.38% → 9.64% → 8.37%**; still significant at 15% |
+| Transaction cost 2 → 5 → 10 → 20 bp per side | CAGR **10.75% → 10.38% → 9.76% → 8.54%** |
 
 ---
 
@@ -196,6 +196,11 @@ python src/05_backtest.py
 
 - Backtest results are in-sample. They are not a prediction and not investment advice.
 - No capital is managed against this strategy.
+- **Alpha / beta / t** come from a daily regression of strategy log returns on CSI 300
+  log returns, with the intercept annualised ×252. **No risk-free rate is subtracted**,
+  so this is a regression intercept rather than Jensen's alpha. Subtracting a 2%
+  risk-free rate from both sides gives **8.25% with t = 3.57**. The t-statistic is
+  unchanged by annualisation; Newey-West (5 lags) moves it from 4.44 to 4.28.
 - Price data: Tencent (`web.ifzq.gtimg.cn`); industry classification: Shenwan 2021
   level-2; index history: CSI 300 / CSI 500.
 - The engine is fully deterministic: iteration order is fixed, so repeated runs and
@@ -220,7 +225,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 |---|---|---|---|---|---|---|
 | **10.38%** | 8.61% | **1.23** | **−11.11%** | 10.27% | **4.44** | −0.008 |
 
-14.4 年累计收益 **+313%**。不加杠杆：总名义敞口始终不超过权益的 100%，平均 gross 33%。
+14.4 年累计收益 **+313%**。不加杠杆：开仓时总名义敞口不超过权益的 100%（持有期内权益波动会让这个比率漂移），平均 gross 33%。
 
 ## 方法
 
@@ -245,7 +250,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 
 | 步骤 | 规则 |
 |---|---|
-| 规模匹配 | `|ln(市值_A/市值_B)| < 1.0` |
+| 规模匹配 | `\|ln(市值_A/市值_B)\| < 1.0` |
 | EG 粗筛 | OLS 求 β，残差 ADF `p ≤ 0.20` |
 | Johansen | `det_order=0, k_ar_diff=1`，5% 水平 |
 
@@ -255,15 +260,15 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 |---|---|
 | 全期 ADF | `p ≤ 0.05` |
 | 两段式样本外 | 前 378 日估 β、后 126 日检验，`p ≤ 0.10` |
-| **排序键** | **`stab = |前半均值 − 后半均值| / σ` 升序** |
+| **排序键** | **`stab = \|前半均值 − 后半均值\| / σ` 升序** |
 
 `stab` 衡量的是**价差水平有没有漂移**，而不是"看起来多平稳"。两种排序选出的配对
-**只有 12% 重叠**，结果差别很大：
+**只有 12.5% 重叠**（中位），结果差别很大：
 
-| 排序键 | 选中配对 adf_test 中位 | 选中配对 stab 中位 | 夏普 |
-|---|---|---|---|
-| `adf_test` | 0.0015 | **0.349** | 0.56 |
-| **`stab`** | 0.034 | **0.038** | **0.99** |
+| 排序键 | 选中配对 adf_test 中位 | 选中配对 stab 中位 | 年化 | 夏普 |
+|---|---|---|---|---|
+| `adf_test` | 0.0020 | **0.344** | 3.67% | **0.43** |
+| **`stab`** | 0.030 | **0.043** | **10.38%** | **1.23** |
 
 > ADF 的 p 值小，只说明"价差会回到**某个**水平"；
 > 真正能赚钱的是**那个水平本身不动**。
@@ -273,18 +278,21 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | 项 | 取值 |
 |---|---|
 | z 值 | `(S − MA20(S)) / EWMA_σ(S − MA20)`，α = 0.06 |
-| 开仓 | `|z| ≥ 2.0`（T−1 收盘出信号，T 日收盘成交） |
-| 平仓 | `|z| ≤ 0` |
+| 开仓 | `\|z\| ≥ 2.0`（T−1 收盘出信号，T 日收盘成交） |
+| 平仓 | `\|z\| ≤ 0` |
 | **时间止损** | **持仓满 20 个交易日仍未止盈 → 强制平仓** |
 | 价格止损 | 无 |
 | 持仓 | 跨期保留；停牌、涨跌停不开仓 |
 
-持仓中位 **15 个交易日**,p90 = 20。433 笔交易里,258 笔止盈出场,126 笔由 20 天期限平仓。
+持仓中位 **15 个交易日**，p90 = 20。433 笔交易里，258 笔止盈出场，126 笔由 20 天期限平仓。
 
 **为什么是 20 天:** 均线本身是一个 20 日窗口。只要持有足够久,均线就会走到价差的位置,
 `z` 会自己回到 0——**即使价差一动没动**。所以超过一个窗口的持仓,已经不是在交易原来那个
-偏离了。实测:持有 15 天以内的交易平均赚 **+4.2% ~ +4.8%**,持有 30 天以上的平均亏
-**−5.0% ~ −10.5%**。20 天是机制决定的,不是扫参数扫出来的。
+偏离了。在**不加时间止损**的那一版里实测：持有 15 天以内的交易平均赚 **+4.2% ~ +4.8%**，
+持有 30 天以上的平均亏 **−5.0% ~ −10.5%**。20 天是机制决定的,不是扫参数扫出来的。
+
+另外，如果平仓腿跌停或停牌，平仓会顺延，所以实际规则是"第 20 天或之后第一个能平仓的
+交易日"。433 笔里只有个位数超过 25 天。
 
 ### 5. 仓位管理
 
@@ -300,7 +308,7 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 
 (c) 硬上限    Σ 仓位名义敞口 ≤ 权益 100%
               新开仓缩量到剩余空间，空间为零则跳过
-              这条上限不调整、不平掉已有仓位；唯一的强制平仓是 §6 的 20 天期限
+              这条上限不调整、不平掉已有仓位；唯一的强制平仓是上面 §4 的 20 天期限
 ```
 
 闲置资金买入**逆回购，按 2%/年计息**（利息按开仓后的持仓计提，当天新开的仓位不计息）。
@@ -312,11 +320,10 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | 起始年 2012 / 2015 / 2018 / 2020 | 夏普 **1.23 / 1.31 / 1.23 / 1.00** |
 | 前后半段 | 夏普 1.41 / **1.00**（t = 2.49） |
 | 滚动两年夏普 | 中位 1.33，最差 −0.06，**<0 的窗口占 0.0%** |
-| 规模 × 入场 6 组 | `stab` 在 **6/6** 中胜过 `adf_test` |
-| 4 种仓位倾斜函数 | 夏普 1.04 – 1.13（平台） |
-| 波动率阈值 0.3–0.7 | 夏普 0.93 – 1.01（平台） |
-| 融券费率 0% → 15% | 年化 8.76% → 6.35%，始终显著 |
-| 交易成本 4bp → 20bp | 年化 8.37% → 7.78% |
+| **排序键 `stab` vs `adf_test`** | **年化 10.38% vs 3.67%；夏普 1.23 vs 0.43** |
+| 4 种仓位倾斜函数（2p / 0.5+p / √2p / 1） | 夏普 **1.14 – 1.30**，是平台；所选形式不是最大值 |
+| 融券费率 0% → 4% → 8% → 15% | 年化 **11.11% → 10.38% → 9.64% → 8.37%**；15% 时仍显著 |
+| 交易成本 单边 2 → 5 → 10 → 20 bp | 年化 **10.75% → 10.38% → 9.76% → 8.54%** |
 
 ## 目录结构
 
@@ -353,5 +360,9 @@ python src/05_backtest.py
 
 - 回测结果为样本内结果，不构成预测，也不构成投资建议。
 - 本策略未管理任何实际资金。
+- **Alpha / beta / t** 来自"策略对数收益对沪深 300 对数收益"的日频回归,截距 ×252 年化。
+  **没有扣减无风险利率**,所以它是回归截距,不是 Jensen's alpha。两边同时减去 2% 无风险
+  利率后,**alpha 为 8.25%,t = 3.57**。t 值不受年化影响;用 Newey-West(5 阶滞后)修正后
+  由 4.44 变为 4.28。
 - 数据来源：腾讯行情 `web.ifzq.gtimg.cn`；行业分类：申万 2021 版二级；指数历史：沪深 300 / 中证 500。
 - 引擎完全确定：遍历顺序固定，重复运行或改变 `PYTHONHASHSEED` 都会得到逐位相同的净值曲线。
