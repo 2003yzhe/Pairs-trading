@@ -1,14 +1,17 @@
 # Industry-Neutral Pairs Trading on CSI 800
 
-This strategy trades cointegrated pairs inside the same Shenwan level-2 industry
-among the 800 largest A-shares. Every six months it rebuilds a point-in-time
-universe, keeps pairs that pass both a full-sample and a held-out cointegration
-test, and ranks them by how little the spread's mean has drifted — not by how
-small the p-value is. It enters the top eight when the 20-day z-score exceeds
-2σ, exits at zero, and force-closes any position still open after 20 trading
-days, sizing each position by the prevailing market-volatility regime; unused
-capital sits in reverse repo. Fully unlevered, it compounded 10.4% a year over
-14.4 years with a Sharpe of 1.23 and an 11% maximum drawdown.
+[**English**](#industry-neutral-pairs-trading-on-csi-800) · [中文](#中文说明) · [Results](#results) · [Method](#method) · [Robustness](#robustness) · [Layout](#repository-layout) · [Reproduction](#reproduction) · [Notes](#notes)
+
+This is an industry-neutral pairs trading strategy on Chinese A-shares. Every six
+months it rebuilds a point-in-time universe of the 800 largest stocks, keeps only
+pairs within the same Shenwan level-2 industry that pass both a full-sample and a
+held-out cointegration test, and ranks them by how little the spread's mean has
+drifted — not by how small the p-value is. It trades the top eight when the 20-day
+z-score exceeds 2σ, exits at zero, and closes anything still open after 20 trading
+days. Position size scales with market volatility, idle cash earns reverse repo, and
+total notional never exceeds equity. Fully unlevered, it returned 10.4% a year over
+14.4 years with a Sharpe of 1.23, an 11% maximum drawdown, and essentially no beta
+to the CSI 300. Every calendar year was positive.
 
 ---
 
@@ -48,6 +51,11 @@ require: ≥495 of the last 504 trading days actually traded (no forward fill),
 ```
 
 Validation: the 2026-06 universe overlaps the published CSI 800 membership by **80%**.
+In 2012 only 228 of today's 800 constituents were listed and tradable, so using
+today's index membership to backtest 2012 would not be a test at all. The
+"≥495 of 504 days traded" rule matters for the same reason: a forward-filled
+suspended stock looks like a perfectly flat spread, which every stationarity test
+will love, and it gaps on resumption.
 
 ### 2. Candidate pairs
 
@@ -146,45 +154,6 @@ those held over 30 days average **−5.0 to −10.5%**.
 
 ---
 
-## What did not work
-
-Each of these was tested with a full backtest, not guessed:
-
-| Direction | Result |
-|---|---|
-| **Distance method (SSD, Gatev)** | all 8 variants lose money (−1.3% to −2.8% p.a.) |
-| Static z / 60 / 120 / 250-day windows | Sharpe ≤ 0.10 |
-| Idle cash → CSI 300 | beta 0.755, drawdown −33.2%, Sharpe 0.49 |
-| Idle cash → CSI 500 | drawdown −48.4%, Sharpe 0.46 |
-| Quarterly rebalancing | Sharpe 0.87 → 0.62 |
-| 12 / 20 pairs in the watchlist | Sharpe falls monotonically; the 9th–30th ranked pairs are net negative |
-| "Split capital over however many pairs qualified" | concentrates risk when the pool is thin |
-| Position-size floor (0.1–0.5) | CAGR decreases monotonically |
-| Five alternative beta definitions | Sharpe 0.19 – 0.25, not a first-order variable |
-| 252-day formation window | Sharpe 0.07 |
-| Fixed-reference exit | −6.19% |
-| Selecting high-volatility pairs | all 4 variants negative (σ is negatively related to mean reversion) |
-| z-based stop loss (3.0σ / 3.5σ) | fires 20 / 1 times in 14 years — the rolling mean follows the price, so z rarely exceeds 3 |
-| **8% P&L stop loss** | CAGR 9.94% → 8.65%, Sharpe 1.36 → 1.25, and **drawdown gets worse** (−8.74% → −10.24%) |
-| **Per-pair position cap (10–30% of equity)** | pure de-leveraging: CAGR and volatility shrink together; Sharpe rises only because idle cash earns repo |
-| **Earlier take-profit (z − 0.3 to − 1.0)** | no better than the 20-day time stop |
-| **Rolling ADF re-check every 20 days** | 9.92% vs 9.94% — no meaningful gain over the time stop |
-| **2× half-life time stop** | 9.38%, Sharpe 1.26 — worse than a flat 20 days |
-| **Residual-loss exit (\|z\| ≤ 0.5 and loss ≥ 3%)** | 9.43%, Sharpe 1.27 — it waits for `z` to come back, which is the slowest thing that happens |
-| **Slower reference (MA40/60/120, EWMA 40–60d)** | capture ratio improves (30% → 41%) but CAGR collapses (9.9% → 1.6%): a slow reference also holds broken pairs |
-
-Two data problems also had to be fixed before any of this was meaningful:
-
-1. **The universe was today's index membership** — in 2012 only 228 of the 800 names
-   were listed and tradable. Using today's constituents to backtest 2012 is not a
-   test at all.
-2. **Suspended days were forward-filled** — a suspended stock looks like a perfectly
-   flat spread, so ADF loves it and the ranking puts it first; on resumption the
-   spread gaps and the position is destroyed. Between 2012 and 2016 the share of
-   suspended stock-days was roughly **70×** that of 2025.
-
----
-
 ## Repository layout
 
 ```
@@ -229,6 +198,8 @@ python src/05_backtest.py
 
 # 中文说明
 
+[English](#industry-neutral-pairs-trading-on-csi-800) · [**中文**](#中文说明) · [结果](#结果) · [方法](#方法) · [稳健性](#稳健性) · [目录结构](#目录结构) · [复现](#复现) · [说明](#说明)
+
 本策略在同一申万二级行业内、面向市值最大的 800 只 A 股做协整配对。每半年重建一次
 point-in-time 股票池，只保留同时通过全样本与留出样本协整检验的配对，并按**价差均值
 漂移的幅度**排序——而不是按 p 值大小排序。当 20 日 z 值超过 2σ 时做多/做空前 8 对，
@@ -257,6 +228,9 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 ```
 
 校验：2026-06 的股票池与官方公布的中证 800 成分重叠 **80%**。
+2012 年，今天这 800 只里只有 228 只已上市可交易——用今天的成分回测 2012 年，
+根本不是一个检验。同理，"504 日内至少 495 天真实成交"这条约束也是必要的：
+停牌日做前向填充会让价差看起来"完美平滑"，任何平稳性检验都会喜欢它，而它复牌时会跳空。
 
 ### 2. 生成候选配对
 
@@ -336,40 +310,6 @@ point-in-time 股票池，只保留同时通过全样本与留出样本协整检
 | 波动率阈值 0.3–0.7 | 夏普 0.93 – 1.01（平台） |
 | 融券费率 0% → 15% | 年化 8.76% → 6.35%，始终显著 |
 | 交易成本 4bp → 20bp | 年化 8.37% → 7.78% |
-
-## 试过但没用的方向
-
-每个方向都做过完整回测：
-
-| 方向 | 结果 |
-|---|---|
-| **距离法 SSD（Gatev）** | 8 个变体全部亏损（−1.3% ~ −2.8%/年） |
-| 静态 z / 60 / 120 / 250 日窗口 | 夏普 ≤ 0.10 |
-| 闲置资金买沪深 300 | beta 0.755，回撤 −33.2%，夏普 0.49 |
-| 闲置资金买中证 500 | 回撤 −48.4%，夏普 0.46 |
-| 季度调仓 | 夏普 0.87 → 0.62 |
-| 观察名单扩到 12 / 20 / 30 对 | 夏普单调下降；第 9~30 名的配对是净负贡献 |
-| "选几对就按几对分资金" | 池子稀薄时集中度风险骤增 |
-| 仓位下限（0.1–0.5） | 年化单调下降 |
-| 五种 β 定义 | 夏普 0.19 – 0.25，不是一阶变量 |
-| 形成期 252 日 | 夏普 0.07 |
-| 固定参照系出场 | −6.19% |
-| 挑"波动大"的配对 | 4 个变体全负（σ 与回归性负相关） |
-| **基于 z 的止损（3.0σ / 3.5σ）** | 14 年只触发 20 次 / **1 次** —— 均线跟着价格走，z 很难超过 3 |
-| **8% 金额止损** | 年化 9.94% → 8.65%，夏普 1.36 → 1.25，**回撤反而恶化**（−8.74% → −10.24%） |
-| **单对仓位上限（10~30%）** | 等效于降杠杆：收益、波动、回撤同比缩小；夏普上升只是因为闲钱吃逆回购 |
-| **提前止盈（z 阈值 −0.3 ~ −1.0）** | 不如 20 天时间止损 |
-| **每 20 天重跑 ADF 重检** | 9.92% vs 9.94%，与时间止损无实质差异 |
-| **2× 半衰期时间止损** | 9.38%，夏普 1.26，不如固定 20 天 |
-| **残差损失检验（\|z\|≤0.5 且亏 3%）** | 9.43%，夏普 1.27 —— 它在等 z 回来，而 z 回来是最慢的 |
-| **放慢参照系（MA40/60/120、EWMA 40~60 日）** | 捕获率上升（30% → 41%），但年化崩到 1.6%：慢参照系同样会套住已经破裂的配对 |
-
-另外有两个数据问题必须先修好，否则上面的结果都不成立：
-
-1. **股票池用的是今天的指数成分** —— 2012 年那 800 只里只有 228 只已上市可交易，
-   用今天的成分去回测 2012 年，根本不是一个检验。
-2. **停牌日被前向填充** —— 停牌的股票价差看起来"完美平滑"，ADF 极显著、排序优先选中，
-   复牌后价差跳空、仓位报废。2012–2016 年停牌股日占比约为 2025 年的 **70 倍**。
 
 ## 目录结构
 
